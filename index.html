@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromatic Uplift Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes rainbowText {
+            0% { color: red; }
+            15% { color: orange; }
+            30% { color: yellow; }
+            45% { color: green; }
+            60% { color: blue; }
+            75% { color: indigo; }
+            90% { color: violet; }
+            100% { color: red; }
+        }
+
+        @keyframes rainbowBorder {
+            0% { border-color: red; box-shadow: 0 0 10px red; }
+            15% { border-color: orange; box-shadow: 0 0 12px orange; }
+            30% { border-color: yellow; box-shadow: 0 0 14px yellow;}
+            45% { border-color: green; box-shadow: 0 0 12px green;}
+            60% { border-color: blue; box-shadow: 0 0 10px blue;}
+            75% { border-color: indigo; box-shadow: 0 0 12px indigo;}
+            90% { border-color: violet; box-shadow: 0 0 14px violet;}
+            100% { border-color: red; box-shadow: 0 0 10px red;}
+        }
+        
+        @keyframes subtlePulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.95; }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Dark background for RGB to pop */
+            color: #F3F4F6; /* Light text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            text-align: center;
+            overflow-x: hidden; /* Prevent horizontal scroll from shadows */
+        }
+
+        .animated-title {
+            font-size: 2.5rem; /* Adjusted from 3xl/4xl for better fit */
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            animation: rainbowText 10s linear infinite;
+        }
+        
+        .subtitle {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            color: #D1D5DB; /* Lighter gray for subtitle */
+        }
+
+        .message-display-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            perspective: 1000px; /* For 3D effects if we add them */
+        }
+        
+        .message-box {
+            background-color: rgba(31, 41, 55, 0.8); /* Semi-transparent dark bg */
+            backdrop-filter: blur(5px);
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            min-height: 120px;
+            width: 90%;
+            max-width: 550px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: #E5E7EB;
+            border: 3px solid;
+            animation: rainbowBorder 8s linear infinite, subtlePulse 10s ease-in-out infinite alternate;
+            transition: transform 0.3s ease-out;
+        }
+
+        .message-box-animate-in {
+            animation: subtlePulse 0.5s ease-in-out, rainbowBorder 8s linear infinite; /* Keep border animation */
+        }
+        
+        .btn {
+            background-image: linear-gradient(to right, #EF4444, #F97316, #EAB308, #22C55E, #3B82F6, #8B5CF6);
+            background-size: 200% auto;
+            color: white;
+            padding: 0.85rem 1.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-position 0.5s ease, transform 0.1s;
+            border: none;
+            margin: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            background-position: right center; /* Change gradient direction */
+            transform: translateY(-2px) scale(1.03);
+        }
+        .btn:active {
+            transform: translateY(0px) scale(1);
+        }
+        .btn-secondary {
+            background-image: linear-gradient(to right, #6B7280, #4B5563, #374151); /* Monochromatic gradient */
+             color: #F3F4F6;
+        }
+        .btn-secondary:hover {
+            background-position: right center;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 1rem;
+        }
+        .control-group {
+            background-color: rgba(55, 65, 81, 0.7); /* Darker, semi-transparent */
+            backdrop-filter: blur(3px);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #D1D5DB;
+        }
+        .control-group select {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #9CA3AF;
+            background-color: #374151; /* Darker select */
+            color: #F3F4F6;
+        }
+
+        .notification-toast { /* Renamed from message-box for clarity */
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px); /* Start off-screen */
+            background-image: linear-gradient(to right, #10B981, #22D3EE);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            visibility: hidden;
+            font-weight: 500;
+        }
+        .notification-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            visibility: visible;
+        }
+        .footer-text {
+            margin-top: 2.5rem;
+            font-size: 0.9rem;
+            animation: rainbowText 15s linear infinite alternate; /* Slower rainbow for footer */
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1 class="animated-title">Chromatic Uplift Engine</h1>
+    <p class="subtitle">Your daily dose of vibrant positivity, on demand!</p>
+
+    <div class="message-display-container">
+        <div id="messageDisplayBox" class="message-box">
+            Awaiting a wave of uplifting energy...
+        </div>
+    </div>
+
+    <div class="flex flex-wrap justify-center items-center mb-6">
+        <button id="getMessageBtn" class="btn">Get a Pick-Me-Up!</button>
+        <button id="messageBarrageBtn" class="btn btn-secondary">Positivity Barrage!</button>
+    </div>
+
+    <div class="controls-grid">
+        <div class="control-group">
+            <label for="modeToggle">Delivery Mode:</label>
+            <select id="modeToggle" class="p-2 rounded border">
+                <option value="zen" selected>🧘 Zen Flow</option>
+                <option value="party">🥳 Energy Surge</option>
+            </select>
+        </div>
+        <div class="control-group" id="cadenceControlGroup" style="display: none;">
+            <label for="cadenceSelect">Energy Surge Cadence (seconds):</label>
+            <select id="cadenceSelect" class="p-2 rounded border">
+                <option value="15000">Gentle Pulse (15s)</option>
+                <option value="8000">Steady Glow (8s)</option>
+                <option value="3000">Rapid Radiance (3s)</option>
+            </select>
+            <p class="text-xs mt-1 text-gray-400">Auto-delivers uplifting messages!</p>
+        </div>
+    </div>
+    
+    <div id="notificationToast" class="notification-toast">Notification ready!</div>
+
+    <footer class="footer-text">
+        Forged with ✨ and good vibes!
+    </footer>
+
+    <script>
+        // --- DOM Elements ---
+        const messageDisplayBox = document.getElementById('messageDisplayBox');
+        const getMessageBtn = document.getElementById('getMessageBtn');
+        const messageBarrageBtn = document.getElementById('messageBarrageBtn');
+        const modeToggle = document.getElementById('modeToggle');
+        const cadenceControlGroup = document.getElementById('cadenceControlGroup');
+        const cadenceSelect = document.getElementById('cadenceSelect');
+        const notificationToast = document.getElementById('notificationToast');
+
+        // --- State Variables ---
+        let currentMode = 'zen'; // 'zen' or 'party'
+        let partyCadence = 8000; // Default party cadence in ms
+        let partyIntervalId = null;
+        let isDisplayAnimating = false; // To prevent overlap if message box has its own animation
+        let notificationTimeoutId = null;
+
+        // --- Message Database (formerly compliments) ---
+        const messages = [
+            "Your potential is a dazzling spectrum of possibilities!",
+            "Every breath you take is a step towards something wonderful.",
+            "You radiate an energy that brightens the world around you.",
+            "Believe in your inner sparkle; it's uniquely yours.",
+            "The universe is cheering you on, can you feel the good vibes?",
+            "You're capable of creating waves of positive change.",
+            "Your resilience shines brighter than any diamond.",
+            "Embrace your journey; it's a masterpiece in progress.",
+            "Even on cloudy days, your inner sun is powerful.",
+            "You have a heart of gold and a spirit of pure light.",
+            "Small steps forward are still incredible progress. Keep glowing!",
+            "Your unique perspective adds vibrant color to the world.",
+            "Let your awesomeness echo through the cosmos!",
+            "You're not just a star; you're an entire constellation.",
+            "The world needs your specific brand of magic. Don't hold back!",
+            "Every challenge you overcome polishes your inner brilliance.",
+            "You are a beacon of hope and strength.",
+            "Your capacity for kindness can move mountains.",
+            "Keep shining, the world is drawn to your light.",
+            "You are more powerful than you think and more amazing than you realize.",
+            "Your creativity is a kaleidoscope of inspiration.",
+            "You have the power to uplift others with your presence.",
+            "Your laughter is a melody that brightens the darkest days.",
+            "You are a masterpiece in the making, painted with the colors of your dreams.",
+            "Your courage to be yourself is a radiant gift to the world.",
+            "You are a source of inspiration, lighting the way for others.",
+            "Your kindness is a ripple that creates waves of positivity.",
+            "You are a unique blend of strengths and talents, a true original.",
+            "Your smile is a spark that ignites joy in those around you.",
+            "You have the power to turn challenges into stepping stones.",
+            "Your passion is a fire that fuels your journey and inspires others.",
+            "You are a force of nature, unstoppable and full of potential.",
+            "Your dreams are the seeds of your future, nurture them with love and action.",
+            "You are a symphony of strengths, each note contributing to your unique melody.",
+            "Your presence is a gift that brings warmth and light to those around you.",
+            "You are a radiant soul, shining brightly in the tapestry of life.",
+            "Your journey is a beautiful story, unfolding with each step you take.",
+            "You are a source of positivity, spreading joy wherever you go.",
+            "Your heart is a treasure trove of compassion and understanding.",
+            "You are a vibrant thread in the fabric of humanity, adding your unique color.",
+            "Your spirit is a beacon of hope, guiding others through the darkness.",
+            "You are a living testament to the power of resilience and determination.",
+            "Your laughter is a symphony that resonates with joy and happiness.",
+            "You are a beautiful blend of strength and vulnerability, a true masterpiece.",
+            "Your journey is a dance of growth, each step a celebration of your progress.",
+            "You are a shining example of what it means to be authentically you.",
+            "Your energy is contagious, inspiring those around you to shine brighter.",
+            "You are a radiant light in the world, illuminating the path for others.",
+            "Your uniqueness is your superpower, embrace it with pride.",
+            "You are a source of inspiration, reminding others of their own brilliance.",
+            "Your heart is a garden of kindness, blooming with love and compassion.",
+            "You are a beautiful soul, radiating warmth and positivity.",
+            "Your journey is a canvas, painted with the colors of your experiences.",
+            "You are a source of strength, lifting others with your unwavering spirit.",
+            "Your presence is a gift, bringing joy and light to those around you.",
+            "You are a beacon of positivity, shining brightly in the world.",
+            "Your dreams are the stars that guide you through the night.",
+            "You are a symphony of possibilities, each note contributing to your unique melody.",
+            "Your spirit is a radiant force, inspiring others to embrace their own light."
+        ];
+
+        // --- Utility Functions ---
+        function getRandomMessage() {
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        function showNotification(text, duration = 3000) {
+            notificationToast.textContent = text;
+            notificationToast.classList.add('show');
+            clearTimeout(notificationTimeoutId);
+            notificationTimeoutId = setTimeout(() => {
+                notificationToast.classList.remove('show');
+            }, duration);
+        }
+        
+        // --- Core Logic ---
+        function displayMessage() {
+            if (isDisplayAnimating) return;
+
+            isDisplayAnimating = true;
+            // Add a class for entry animation to the message box
+            messageDisplayBox.classList.add('message-box-animate-in'); 
+            
+            getMessageBtn.disabled = true; // Disable during animation/update
+
+            setTimeout(() => {
+                messageDisplayBox.textContent = getRandomMessage();
+                messageDisplayBox.classList.remove('message-box-animate-in');
+                isDisplayAnimating = false;
+                // Only re-enable if not in party mode auto-run
+                if (currentMode === 'zen' || !partyIntervalId) {
+                    getMessageBtn.disabled = false;
+                }
+            }, 600); // Animation duration + buffer
+        }
+
+        function startPartyMode() {
+            if (partyIntervalId) clearInterval(partyIntervalId);
+            
+            displayMessage(); // Display one immediately
+            partyIntervalId = setInterval(displayMessage, partyCadence);
+            cadenceControlGroup.style.display = 'block';
+            getMessageBtn.textContent = "Energy Surge ACTIVE!";
+            getMessageBtn.disabled = true; 
+            showNotification(`🥳 Energy Surge activated! Cadence: ${partyCadence/1000}s`);
+        }
+
+        function stopPartyMode() {
+            if (partyIntervalId) {
+                clearInterval(partyIntervalId);
+                partyIntervalId = null;
+            }
+            cadenceControlGroup.style.display = 'none';
+            getMessageBtn.textContent = "Get a Pick-Me-Up!";
+            getMessageBtn.disabled = false;
+            showNotification("🧘 Zen Flow mode. Click for uplifting messages!");
+        }
+
+        function handleModeChange() {
+            currentMode = modeToggle.value;
+            if (currentMode === 'party') {
+                partyCadence = parseInt(cadenceSelect.value);
+                startPartyMode();
+            } else {
+                stopPartyMode();
+            }
+        }
+        
+        function handleCadenceChange() {
+            if (currentMode === 'party') {
+                partyCadence = parseInt(cadenceSelect.value);
+                stopPartyMode(); 
+                startPartyMode(); 
+                showNotification(`Energy Surge cadence updated to ${partyCadence/1000}s!`);
+            }
+        }
+
+        async function messageBarrage() {
+            if (isDisplayAnimating) return;
+            
+            messageBarrageBtn.disabled = true;
+            getMessageBtn.disabled = true;
+
+            showNotification("Prepare for a Positivity Barrage!");
+
+            const numMessages = Math.floor(Math.random() * 3) + 3; // 3 to 5 messages
+            for (let i = 0; i < numMessages; i++) {
+                await new Promise(resolve => {
+                    isDisplayAnimating = true;
+                    messageDisplayBox.classList.add('message-box-animate-in');
+                    setTimeout(() => {
+                        messageDisplayBox.textContent = getRandomMessage() + (i < numMessages -1 ? " (More incoming!)" : " (Barrage complete!)");
+                        messageDisplayBox.classList.remove('message-box-animate-in');
+                        isDisplayAnimating = false;
+                        resolve();
+                    }, 700); 
+                });
+                if (i < numMessages - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 400)); // Pause between messages
+                }
+            }
+            messageBarrageBtn.disabled = false;
+            if (currentMode === 'zen' || !partyIntervalId) {
+                getMessageBtn.disabled = false;
+            }
+            showNotification("Positivity Barrage complete! You're radiant! ✨");
+        }
+
+        // --- Event Listeners ---
+        getMessageBtn.addEventListener('click', () => {
+            if (currentMode === 'zen') {
+                displayMessage();
+            }
+            // In party mode, button is typically disabled during auto-run.
+        });
+        
+        messageBarrageBtn.addEventListener('click', messageBarrage);
+        modeToggle.addEventListener('change', handleModeChange);
+        cadenceSelect.addEventListener('change', handleCadenceChange);
+
+        // --- Initial Setup ---
+        if (currentMode === 'zen') {
+            showNotification("Welcome to the Chromatic Uplift Engine! 🌈", 4000);
+            cadenceControlGroup.style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>
